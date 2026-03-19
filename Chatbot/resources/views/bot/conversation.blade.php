@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Chatbot Index page</title>
+    <title>AI Chatbot</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -9,7 +9,7 @@
 
 <body class="bg-gray-100">
 
-<div class="max-w-3xl mx-auto mt-10" x-data="ask()">
+<div class="max-w-3xl mx-auto mt-10" x-data="chatbot()">
 
     <div class="bg-white shadow rounded-lg p-4 h-[600px] flex flex-col">
 
@@ -60,20 +60,28 @@
 
 <script>
 
-    function ask() {
+    function chatbot() {
+
         return {
+
             messages: [],
+
             input: '',
+
             async sendMessage() {
+
                 if (!this.input) return;
+
                 let message = this.input;
 
                 this.messages.push({
                     role: 'user',
                     content: message
                 });
+
                 this.input = '';
-                const response = await fetch('/bot/chat', {
+
+                const response = await fetch('/chat/{sessionId}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -83,15 +91,13 @@
                         message: message
                     })
                 });
+
                 const data = await response.json();
-                if(data.conversation_id) {
-                    window.location.href = '/bot/chat/' + data.conversation_id;
-                } else {
-                    this.messages.push({
-                        role: 'assistant',
-                        content: data.reply
-                    });
-                }
+
+                this.messages.push({
+                    role: 'assistant',
+                    content: data.reply
+                });
 
             }
 

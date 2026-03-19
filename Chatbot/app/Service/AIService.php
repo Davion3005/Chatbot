@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -33,7 +32,6 @@ class AIService
             ]);
             if ($response->successful()) {
                 $responseData = $response->json();
-                Log::info(print_r($responseData, true));
                 return [
                     'status' => 'success',
                     'message' => 'AI response generated successfully',
