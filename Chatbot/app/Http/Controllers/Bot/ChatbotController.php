@@ -25,20 +25,22 @@ class ChatbotController extends BaseController
     public function index(): Factory|View
     {
         Log::info('User enter the Chatbot app');
-        return view('bot.chat');
+        return view('bot.index');
     }
 
     public function createConversation(StoreConversationRequest $request)
     {
         Log::info('User create new conversation', ['request' => $request->validated()]);
-        $initialMessage = $request->input('initial_message');
         $conversation = $this->chatService->createConversation($request->validated());
-        return response()->json(['conversation_id' => $conversation->id, 'initial_message' => $initialMessage]);
+
+        return redirect()
+            ->route('bot.getConversation', ['conversation' => $conversation->id]);
     }
 
     public function getConversation(Conversation $conversation, Request $request): Factory|View
     {
         Log::info('User get conversation', ['conversation_id' => $conversation->id]);
+        $conversation->load('messages');
         return view('bot.conversation', compact('conversation'));
     }
 
@@ -46,7 +48,7 @@ class ChatbotController extends BaseController
     {
         $message = $request->input('message');
         Log::info('User send message to Chatbot', ['message' => $message]);
-        $result = $this->chatService->ask($message);
+        $result = $this->chatService->ask($conversation, $message);
         return response()->json($result);
     }
 }

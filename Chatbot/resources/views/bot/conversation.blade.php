@@ -9,7 +9,7 @@
 
 <body class="bg-gray-100">
 
-<div class="max-w-3xl mx-auto mt-10" x-data="chatbot()">
+<div class="max-w-3xl mx-auto mt-10" x-data='chatbot(@json($conversation))'>
 
     <div class="bg-white shadow rounded-lg p-4 h-[600px] flex flex-col">
 
@@ -60,12 +60,10 @@
 
 <script>
 
-    function chatbot() {
-
+    function chatbot(conversation) {
+        console.log(conversation);
         return {
-
-            messages: [],
-
+            messages: conversation?.messages || [],
             input: '',
 
             async sendMessage() {
@@ -81,7 +79,7 @@
 
                 this.input = '';
 
-                const response = await fetch('/chat/{sessionId}', {
+                const response = await fetch('/bot/chat/' + conversation.id, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -96,7 +94,7 @@
 
                 this.messages.push({
                     role: 'assistant',
-                    content: data.reply
+                    content: data.data
                 });
 
             }
