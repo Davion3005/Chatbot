@@ -9,6 +9,7 @@ Route::get('/', function () {
 
 Route::group(['prefix' => 'bot'], function () {
     Route::get('/chat', [ChatbotController::class, 'index']);
-    Route::post('/chat', [ChatbotController::class, 'chat']);
-    Route::get('/chat/{sessionId}', [ChatbotController::class, 'chatSession']);
+    Route::post('/chat', [ChatbotController::class, 'createConversation'])->name('bot.createConversation');
+    Route::get('/chat/{conversation}', [ChatbotController::class, 'getConversation'])->name('bot.getConversation');
+    Route::post('/chat/{conversation}', [ChatbotController::class, 'ask'])->name('bot.ask');
 });

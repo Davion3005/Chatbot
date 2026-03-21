@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -11,6 +10,9 @@ class AIService
     private string $baseUrl;
 
     private string $model;
+
+    private bool $isShortAnswer;
+
     public function __construct()
     {
         $this->initializeAI();
@@ -20,10 +22,12 @@ class AIService
     {
         $this->baseUrl = env('AI_API_BASE_URL', 'http://localhost:11434/api');
         $this->model = 'mistral';
+        $this->isShortAnswer = env('AI_SHORT_ANSWER', true);
     }
 
     public function processMessage($message)
     {
+        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
         try {
             $chatEndpoint = $this->baseUrl . '/generate';
             $response = Http::post($chatEndpoint, [
@@ -33,7 +37,6 @@ class AIService
             ]);
             if ($response->successful()) {
                 $responseData = $response->json();
-                Log::info(print_r($responseData, true));
                 return [
                     'status' => 'success',
                     'message' => 'AI response generated successfully',
