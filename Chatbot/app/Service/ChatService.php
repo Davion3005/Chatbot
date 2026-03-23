@@ -58,4 +58,67 @@ class ChatService
 
         return $messages;
     }
+
+    public function stream($conversation, $message)
+    {
+        Log::info('Processing user message with streaming in ChatService', ['conversation_id' => $conversation->id, 'message' => $message]);
+        $conversation->messages()->create([
+            'role' => 'user',
+            'content' => $message,
+        ]);
+
+        return response()->stream(function () use ($message, $conversation) {
+            // Must be set before any output
+            ini_set('output_buffering', 'off');
+            ini_set('zlib.output_compression', false);
+
+            $stream = $this->aiService->processStreamingMessage($message);
+
+            // Handle error string returned from AIService
+            if (!($stream instanceof \Psr\Http\Message\StreamInterface)) {
+                echo json_encode(['response' => $stream]) . "\n";
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+                return;
+            }
+
+            $buffer = '';
+            $fullResponse = '';
+
+            while (!$stream->eof()) {
+                $buffer .= $stream->read(1024);
+
+                // Split on newlines, keep incomplete tail for next iteration
+                $lines = explode("\n", $buffer);
+                $buffer = array_pop($lines);
+
+                foreach ($lines as $jsonLine) {
+                    $jsonLine = trim($jsonLine);
+                    if ($jsonLine === '') continue;
+
+                    $chunk = json_decode($jsonLine, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE && isset($chunk['response'])) {
+                        $fullResponse .= $chunk['response'];
+                        // Emit JSON + newline so the FE can parse line-by-line
+                        echo json_encode(['response' => $chunk['response']]) . "\n";
+                        if (ob_get_level() > 0) ob_flush();
+                        flush();
+                    }
+                }
+            }
+
+            // Save the complete AI reply to the database after streaming finishes
+            $conversation->messages()->create([
+                'role' => 'assistant',
+                'content' => $fullResponse,
+            ]);
+
+        }, 200, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
 }

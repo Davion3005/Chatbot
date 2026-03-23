@@ -61,7 +61,6 @@
 <script>
 
     function chatbot(conversation) {
-        console.log(conversation);
         return {
             messages: conversation?.messages || [],
             input: '',
@@ -85,18 +84,38 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({
-                        message: message
-                    })
+                    body: JSON.stringify({ message })
                 });
 
-                const data = await response.json();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
 
-                this.messages.push({
-                    role: 'assistant',
-                    content: data.data
-                });
+                this.messages.push({ role: 'assistant', content: '' });
+                // Use index to mutate through Alpine's reactive proxy so the DOM updates
+                const msgIdx = this.messages.length - 1;
 
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // keep incomplete tail for next iteration
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+
+                        try {
+                            const data = JSON.parse(line);
+                            this.messages[msgIdx].content += data.response ?? '';
+                        } catch (e) {
+                            // skip malformed lines
+                        }
+                    }
+                }
             }
 
         }

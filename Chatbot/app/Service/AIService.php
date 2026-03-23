@@ -4,6 +4,7 @@ namespace App\Service;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Psr\Http\Message\StreamInterface;
 
 class AIService
 {
@@ -25,7 +26,7 @@ class AIService
         $this->isShortAnswer = env('AI_SHORT_ANSWER', true);
     }
 
-    public function processMessage($message)
+    public function processMessage($message): array
     {
         $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
         try {
@@ -50,7 +51,6 @@ class AIService
                     'data' => null
                 ];
             }
-
         } catch (\Exception $e) {
             // Log the error or handle it as needed
             return [
@@ -58,6 +58,26 @@ class AIService
                 'message' => 'Failed to process message: ' . $e->getMessage(),
                 'data' => null
             ];
+        }
+    }
+
+    public function processStreamingMessage($message): StreamInterface|string
+    {
+//        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
+        try {
+            $chatEndpoint = $this->baseUrl . '/generate';
+            $response = Http::withOptions([
+                'stream' => true
+            ])->post($chatEndpoint, [
+                'model' => $this->model,
+                'prompt' => $message,
+                'stream' => true
+            ]);
+
+            return $response->getBody();
+        } catch (\Exception $e) {
+            // Log the error or handle it as needed
+            return 'Failed to process message: ' . $e->getMessage();
         }
     }
 }
