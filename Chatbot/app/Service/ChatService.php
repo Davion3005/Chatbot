@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Log;
+use Psr\Http\Message\StreamInterface;
 
 class ChatService
 {
@@ -75,7 +76,7 @@ class ChatService
             $stream = $this->aiService->processStreamingMessage($message);
 
             // Handle error string returned from AIService
-            if (!($stream instanceof \Psr\Http\Message\StreamInterface)) {
+            if (!($stream instanceof StreamInterface)) {
                 echo json_encode(['response' => $stream]) . "\n";
                 if (ob_get_level() > 0) ob_flush();
                 flush();

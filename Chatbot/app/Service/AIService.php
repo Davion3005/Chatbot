@@ -63,7 +63,7 @@ class AIService
 
     public function processStreamingMessage($message): StreamInterface|string
     {
-//        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
+        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
         try {
             $chatEndpoint = $this->baseUrl . '/generate';
             $response = Http::withOptions([
