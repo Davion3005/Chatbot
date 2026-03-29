@@ -47,15 +47,17 @@ class ChatbotController extends BaseController
     public function ask(Conversation $conversation, Request $request): JsonResponse
     {
         $message = $request->input('message');
+        $files = $request->file('files', []);
         Log::info('User send message to Chatbot', ['message' => $message]);
-        $result = $this->chatService->ask($conversation, $message);
+        $result = $this->chatService->ask($conversation, $message, $files);
         return response()->json($result);
     }
 
     public function stream(Conversation $conversation, Request $request)
     {
         $message = $request->input('message');
+        $files = $request->file('files', []);
         Log::info('User send message to Chatbot with streaming', ['message' => $message]);
-        return $this->chatService->stream($conversation, $message);
+        return $this->chatService->stream($conversation, $message, $files);
     }
 }

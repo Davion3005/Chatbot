@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Service\RAG\RAGService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\StreamInterface;
@@ -14,7 +15,7 @@ class AIService
 
     private bool $isShortAnswer;
 
-    public function __construct()
+    public function __construct(protected RAGService $ragService)
     {
         $this->initializeAI();
     }
@@ -26,9 +27,13 @@ class AIService
         $this->isShortAnswer = env('AI_SHORT_ANSWER', true);
     }
 
-    public function processMessage($message): array
+    public function processMessage($message, $files = []): array
     {
         $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
+        if (!empty($files)) {
+            $this->ragService->upload($files);
+            return $this->ragService->ask($message);
+        }
         try {
             $chatEndpoint = $this->baseUrl . '/generate';
             $response = Http::post($chatEndpoint, [
@@ -61,9 +66,15 @@ class AIService
         }
     }
 
-    public function processStreamingMessage($message): StreamInterface|string
+    public function processStreamingMessage($message, $files = []): StreamInterface|string
     {
-        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
+//        $message = $this->isShortAnswer ? "Please provide a concise answer: $message" : $message;
+        if (!empty($files)) {
+            $this->ragService->upload($files);
+            $ragResponse = $this->ragService->ask($message);
+
+            return $ragResponse;
+        }
         try {
             $chatEndpoint = $this->baseUrl . '/generate';
             $response = Http::withOptions([

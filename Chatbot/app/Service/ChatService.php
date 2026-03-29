@@ -15,14 +15,14 @@ class ChatService
         $this->aiService = $aiService;
     }
 
-    public function ask(Conversation $conversation, string $message): array
+    public function ask(Conversation $conversation, string $message, array $files = []): array
     {
         Log::info('Processing user message in ChatService', ['conversation_id' => $conversation->id, 'message' => $message]);
         $conversation->messages()->create([
             'role' => 'user',
             'content' => $message,
         ]);
-        $reply = $this->aiService->processMessage($message);
+        $reply = $this->aiService->processMessage($message, $files);
         $conversation->messages()->create([
             'role' => 'assistant',
             'content' => $reply['data'],
@@ -60,20 +60,19 @@ class ChatService
         return $messages;
     }
 
-    public function stream($conversation, $message)
+    public function stream($conversation, $message, $files = [])
     {
         Log::info('Processing user message with streaming in ChatService', ['conversation_id' => $conversation->id, 'message' => $message]);
         $conversation->messages()->create([
             'role' => 'user',
-            'content' => $message,
+            'content' => $message ?? 'User sent a message with no content',
         ]);
 
-        return response()->stream(function () use ($message, $conversation) {
-            // Must be set before any output
+        return response()->stream(function () use ($message, $conversation, $files) {
             ini_set('output_buffering', 'off');
             ini_set('zlib.output_compression', false);
 
-            $stream = $this->aiService->processStreamingMessage($message);
+            $stream = $this->aiService->processStreamingMessage($message, $files);
 
             // Handle error string returned from AIService
             if (!($stream instanceof StreamInterface)) {

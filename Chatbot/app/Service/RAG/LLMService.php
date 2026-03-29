@@ -14,23 +14,20 @@ class LLMService
         $this->baseUrl = env('AI_API_BASE_URL', 'http://localhost:11434/api');
     }
 
-    public function generate(string $context, string $query): ?string
+    public function generate(string $context, string $query)
     {
         try {
             $prompt = "Assume you are an assistant that provides answers based on the following context:\n\nContext:\n$context\n\nQuestion:\n$query";
-            $response = Http::post($this->baseUrl . '/generate', [
+
+            $response = Http::withOptions([
+                'stream' => true
+            ])->post($this->baseUrl . '/generate', [
                 'model' => 'mistral',
                 'prompt' => $prompt,
                 'stream' => true
             ]);
 
-            if ($response->successful()) {
-                $responseData = $response->json();
-                return $responseData['response'] ?? null;
-            } else {
-                Log::error('Failed to generate response', ['status' => $response->status(), 'body' => $response->body()]);
-                return null;
-            }
+            return $response->getBody();
         } catch (\Exception $e) {
             Log::error('Failed to generate response: ' . $e->getMessage());
             return null;
